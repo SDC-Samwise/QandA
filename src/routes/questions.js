@@ -1,12 +1,13 @@
 import { Router } from 'express';
 
-import { createQuestion } from '../controllers/questions';
+import { controller } from '../controllers/questions';
 
+console.log('Routes:', controller);
 const router = Router();
 
 router.get('/:product_id/:page/:count');  // List Questions
 
-router.post('/', createQuestion);  // Add a question
+router.post('/', controller);  // Add a question
 
 router.put('/:question_id/helpful');  // Mark Question as Helpful
 
