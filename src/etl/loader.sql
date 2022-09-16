@@ -2,6 +2,24 @@
 -- Please log an issue at https://redmine.postgresql.org/projects/pgadmin4/issues/new if you find any bugs, including reproduction steps.
 BEGIN;
 
+-- Database: samwise-qa-db
+
+-- DROP DATABASE IF EXISTS "samwise-qa-db";
+
+CREATE DATABASE "samwise-qa-db"
+    WITH
+    OWNER = postgres
+    ENCODING = 'UTF8'
+    LC_COLLATE = 'C'
+    LC_CTYPE = 'C'
+    TABLESPACE = pg_default
+    CONNECTION LIMIT = -1
+    IS_TEMPLATE = False;
+
+ALTER DEFAULT PRIVILEGES FOR ROLE postgres REVOKE ALL ON TABLES FROM postgres;
+
+ALTER DEFAULT PRIVILEGES FOR ROLE postgres
+GRANT ALL ON TABLES TO postgres WITH GRANT OPTION;
 
 CREATE TABLE IF NOT EXISTS public.answers
 (
