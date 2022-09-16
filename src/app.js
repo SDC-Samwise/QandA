@@ -103,45 +103,81 @@ app.post('/qa/questions/:question_id/answers', (req, res) => {
           body, answerer_name, answerer_email, id, question_id, date_written, reported, helpful) \
           VALUES ($1, $2, $3, $4, $5, $6,  0, 0) \
         `;
-      console.log('params:', params);
       client.query(insertAnswerQuery, params)
-          .then(response => {
-            var insertPhotoQuery = `
-              INSERT INTO public.answers_photos( \
-                id, answer_id, url) \
-                VALUES ($1, $2, $3) \
-              `;
-            // client.query(insertPhotoQuery, [?, params[3], "first url"])
+        .then(response => {
+          console.log('test')
+          console.log('photos:', photos);
 
-          })
-          .catch(err => res.status(404).json(err));
+
+          // TODO: ONLY SEND THIS WHEN NO PHOTOS
+          // TODO: OTHERWISE DO ANOTHER REQUEST TO SEND PHOTOS
+          res.status(201).json('answer added successfully');
+            // client.query('SELECT COUNT(*) FROM answers_photos')
+            //   .then(({rows}) => {
+            //     var currentCount = Object.values(...rows)[0];
+
+            //   })
+        })
+        .catch(err => res.status(404).json(err));
     })
 });
 
 // TODO: FIX ME
 app.post('/qa/questions', (req, res) => {
 
+
 });
 
 // TODO: FIX ME
 app.get('/qa/questions', (req, res) => {
-  let getQuery = `SELECT * FROM questions WHERE product_id = $1 LIMIT $2`;
-  var params = [];
-  if (req.query.product_id) {
-    params.push(req.query.product_id);
-  }
-  if (req.query.count) {
-    params.push(req.query.count);
-  } else {
-    params.push(5);
-  }
-
-  client.query(getQuery, params)
-    .then(result => {
-      res.status(200).json(result.rows);
+  let getQuestions = `
+  select qs.product_id as product_id, json_agg(json_build_object( \
+    'question_id', qs.id, \
+    'question_body', qs.body, \
+    'question_date', qs.date_written, \
+    'asker_name', qs.asker_name, \
+    'question_email', qs.asker_email, \
+    'question_helpfulness', qs.helpful, \
+    'reported', qs.reported)) results \
+    from questions qs \
+  left join answers az on qs.id=az.question_id \
+  left join answers_photos ap on ap.answer_id=az.id \
+  where qs.product_id=$1 \
+  group by qs.product_id, az.id \
+  `;
+  console.log('req.params:', req.query)
+  client.query(getQuestions, [req.query.product_id])
+    .then(response => {
+      console.log('response.rows:', response.rows);
+      res.status(200).json(response.rows);
     })
-  client.end;
+    .catch(err => console.log(err));
 });
 
 app.listen(3000);
 client.connect();
+
+
+   // TODO: INSERT INTO PHOTOS *********************************
+  //  console.log('photos:', photos);
+  //  var insertPhotoQuery = `
+  //    INSERT INTO public.answers_photos( \
+  //      id, answer_id, url) \
+  //      VALUES ($1, $2, $3) \
+  //    `;
+  //  // client.query(insertPhotoQuery, [?, params[3], "first url"])
+  //  var asyncMap = function (photos) {
+  //    var promises = photos.map((photo, index) => new Promise(client.query(`
+  //      INSERT INTO answers_photos(id, answer_id, url) \
+  //        VALUES ($1, $2, $3)`, [index, params[3], photo]))
+  //    )
+
+  //    return Promise.all(promises)
+  //      .then(response => {
+  //        console.log('response from bulk photo upload:', response);
+  //        res.status(201).json('upload successful');
+  //      })
+  //      .catch(err => console.log(err))
+  //  }
+  //  asyncMap(photos);
+   // TODO: INSERT INTO PHOTOS *********************************
