@@ -89,7 +89,6 @@ app.put('/qa/questions/:question_id/helpful', (req, res) => {
     .catch(err => res.status(404).json('bad request'))
 });
 
-// TODO: FIX ME
 app.post('/qa/questions/:question_id/answers', (req, res) => {
   client.query('SELECT COUNT(*)+1 FROM answers')
     .then(response => {
@@ -97,7 +96,6 @@ app.post('/qa/questions/:question_id/answers', (req, res) => {
       var photos = req.body.photos;
       delete req.body.photos;
       var params = [...Object.values(req.body), id, req.params.question_id, Date.now()];
-
       var insertAnswerQuery = `
         INSERT INTO answers( \
           body, answerer_name, answerer_email, id, question_id, date_written, reported, helpful) \
@@ -105,18 +103,25 @@ app.post('/qa/questions/:question_id/answers', (req, res) => {
         `;
       client.query(insertAnswerQuery, params)
         .then(response => {
-          console.log('test')
-          console.log('photos:', photos);
-
-
-          // TODO: ONLY SEND THIS WHEN NO PHOTOS
-          // TODO: OTHERWISE DO ANOTHER REQUEST TO SEND PHOTOS
-          res.status(201).json('answer added successfully');
-            // client.query('SELECT COUNT(*) FROM answers_photos')
-            //   .then(({rows}) => {
-            //     var currentCount = Object.values(...rows)[0];
-
-            //   })
+          if (photos.length > 0) {
+            client.query('SELECT COUNT(*)+1 FROM answers_photos')
+              .then(({ rows }) => {
+                var photo_id = parseInt(Object.values(...rows)[0]);
+                var insertPhotoQuery = `INSERT INTO public.answers_photos(id, answer_id, url) VALUES ($1, $2, $3)`;
+                var asyncMap = function (photos) {
+                  photos.forEach(async photo => {
+                    await client.query(insertPhotoQuery, [photo_id += 1, id, photo])
+                      .then(response => {
+                        res.status(200).json('data uploaded');
+                      })
+                      .catch(err => console.log('Data'))
+                  })
+                }
+                asyncMap(photos);
+              })
+          } else {
+            res.status(200).json('else statement hit');
+          }
         })
         .catch(err => res.status(404).json(err));
     })
@@ -128,7 +133,6 @@ app.post('/qa/questions', (req, res) => {
 
 });
 
-// TODO: FIX ME
 app.get('/qa/questions', (req, res) => {
   let getQuestions = `
     (select   \
@@ -169,28 +173,3 @@ app.get('/qa/questions', (req, res) => {
 
 app.listen(3000);
 client.connect();
-
-
-   // TODO: INSERT INTO PHOTOS *********************************
-  //  console.log('photos:', photos);
-  //  var insertPhotoQuery = `
-  //    INSERT INTO public.answers_photos( \
-  //      id, answer_id, url) \
-  //      VALUES ($1, $2, $3) \
-  //    `;
-  //  // client.query(insertPhotoQuery, [?, params[3], "first url"])
-  //  var asyncMap = function (photos) {
-  //    var promises = photos.map((photo, index) => new Promise(client.query(`
-  //      INSERT INTO answers_photos(id, answer_id, url) \
-  //        VALUES ($1, $2, $3)`, [index, params[3], photo]))
-  //    )
-
-  //    return Promise.all(promises)
-  //      .then(response => {
-  //        console.log('response from bulk photo upload:', response);
-  //        res.status(201).json('upload successful');
-  //      })
-  //      .catch(err => console.log(err))
-  //  }
-  //  asyncMap(photos);
-   // TODO: INSERT INTO PHOTOS *********************************
