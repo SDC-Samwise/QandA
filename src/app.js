@@ -131,25 +131,38 @@ app.post('/qa/questions', (req, res) => {
 // TODO: FIX ME
 app.get('/qa/questions', (req, res) => {
   let getQuestions = `
-  select qs.product_id as product_id, json_agg(json_build_object( \
-    'question_id', qs.id, \
-    'question_body', qs.body, \
-    'question_date', qs.date_written, \
-    'asker_name', qs.asker_name, \
-    'question_email', qs.asker_email, \
-    'question_helpfulness', qs.helpful, \
-    'reported', qs.reported)) results \
-    from questions qs \
-  left join answers az on qs.id=az.question_id \
-  left join answers_photos ap on ap.answer_id=az.id \
-  where qs.product_id=$1 \
-  group by qs.product_id, az.id \
+    (select   \
+      json_agg(json_build_object(\
+        'question_id', qs2.id , \
+        'question_body', qs2.body, \
+        'question_date', qs2.date_written, \
+        'asker_name', qs2.asker_name, \
+        'question_helpfulness', qs2.helpful, \
+        'reported', qs2.reported,\
+          'answers',COALESCE((qs2.answers), '{}')\
+    )) results\
+    from\
+    (select qs.*, (select json_object_agg(\
+    pho.id, json_build_object(\
+      'id', pho.id,\
+      'body', pho.body,\
+      'answerer_name', pho.answerer_name,\
+      'helpfulness', pho.helpful,\
+      'photos', pho.photos\
+    )\
+    ) az3 from\
+    (select az.*, COALESCE(json_agg(json_build_object('id', ap.id, 'url', ap.url))FILTER (WHERE ap.id IS NOT NULL), '[]') photos \
+    from answers_photos ap \
+    left join answers az on ap.answer_id=az.id where az.question_id = qs.id\
+    group by az.id) pho group by pho.question_id) answers from questions qs where qs.product_id=$1 limit $2 offset $3) qs2)\
   `;
-  console.log('req.params:', req.query)
-  client.query(getQuestions, [req.query.product_id])
+
+  var limit = req.query.count || 5;
+  var offset = req.query.page || 1;
+  client.query(getQuestions, [req.query.product_id, limit, offset])
     .then(response => {
-      console.log('response.rows:', response.rows);
-      res.status(200).json(response.rows);
+      response.rows[0].product_id = req.query.product_id;
+      res.status(200).json(response.rows[0]);
     })
     .catch(err => console.log(err));
 });
