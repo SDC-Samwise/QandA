@@ -1,19 +1,16 @@
-import { Router } from 'express';
+var controller = require('../controllers');
+const router = require('express').Router();
 
-import { controller } from '../controllers/questions';
+router.post('/', controller.questions.addQuestion);
 
-const router = Router();
+router.get('/:product_id/:page/:count', controller.questions.listQuestions);
 
-router.get('/:product_id/:page/:count');  // List Questions
+router.put('/:question_id/helpful', controller.questions.helpful);
 
-router.post('/', controller);  // Add a question
+router.put('/:question_id/report', controller.questions.report);
 
-router.put('/:question_id/helpful');  // Mark Question as Helpful
+router.get('/:question_id/answers', controller.questions.listAnswers);
 
-router.put('/:question_id/report');  // Report Question
+router.post('/:question_id/answers', controller.questions.addAnswer);
 
-router.get('/:question_id/answers');  // Answers List
-
-router.post('/:question_id/answers');  // Add an Answer
-
-export default router;
+module.exports = router;
