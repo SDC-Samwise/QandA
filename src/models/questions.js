@@ -55,56 +55,33 @@ module.exports = {
     `;
     return client.query(updateHelpfulQuery, params)
   },
-  addAnswer: (params, question_id, date) => {
-    return client.query('SELECT COUNT(*)+1 FROM answers')
-      .then(response => {
-        var id = Object.values(response.rows[0])[0];
-        params.pop();
-        params = [...params, id, question_id, date]
-        var insertAnswerQuery = `
-              INSERT INTO answers( \
-                body, answerer_name, answerer_email, id, question_id, date_written, reported, helpful) \
-                VALUES ($1, $2, $3, $4, $5, $6,  0, 0) \
-              `;
-        client.query(insertAnswerQuery, params)
-          .then(response => {
-            if (photos.length > 0) {
-              client.query('SELECT COUNT(*)+1 FROM answers_photos')
-                .then(({ rows }) => {
-                  var photo_id = parseInt(Object.values(...rows)[0]);
-                  var insertPhotoQuery = `INSERT INTO public.answers_photos(id, answer_id, url) VALUES ($1, $2, $3)`;
-                  var asyncMap = function (photos) {
-                    photos.forEach(async photo => {
-                      await client.query(insertPhotoQuery, [photo_id += 1, id, photo])
-                        .then(response => {
-                          // res.status(200).json('data uploaded');
-                        })
-                        .catch(err => console.log('Data'))
-                    })
-                  }
-                  asyncMap(photos);
-                })
-            } else {
-              // res.status(200).json('else statement hit');
-            }
-          })
-          .catch(err => {
-            // res.status(404).json(err)
-          });
-      })
-    },
-    addQuestion: (params) => {
-      var insertQuestionQuery = `
+  addQuestion: (params) => {
+    var insertQuestionQuery = `
         INSERT INTO questions( \
           id, body, asker_name, asker_email, product_id, date_written, reported, helpful) \
           VALUES ($1, $2, $3, $4, $5, $6,  0, 0) \
         `;
-        return client.query(insertQuestionQuery, params)
-    },
-    getQuestionCount: () => {
-      return client.query('SELECT COUNT(*)+1 FROM questions')
-    },
-    getAnswerCount: () => {
-
-    }
-  };
+    return client.query(insertQuestionQuery, params)
+  },
+  getQuestionCount: () => {
+    return client.query('SELECT COUNT(*)+1 FROM questions')
+  },
+  getAnswerCount: () => {
+    return client.query('SELECT COUNT(*)+1 FROM answers')
+  },
+  insertAnswer: (params) => {
+    var insertAnswerQuery = `
+        INSERT INTO answers( \
+          body, answerer_name, answerer_email, id, question_id, date_written, reported, helpful) \
+          VALUES ($1, $2, $3, $4, $5, $6,  0, 0) \
+        `;
+    return client.query(insertAnswerQuery, params)
+  },
+  getPhotoCount: () => {
+    return client.query('SELECT COUNT(*)+1 FROM answers_photos')
+  },
+  insertPhoto: (params) => {
+    var insertPhotoQuery = `INSERT INTO public.answers_photos(id, answer_id, url) VALUES ($1, $2, $3)`;
+    return client.query(insertPhotoQuery, params)
+  }
+};

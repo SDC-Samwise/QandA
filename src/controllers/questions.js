@@ -32,16 +32,6 @@ module.exports = {
       })
       .catch(err => res.status(404).json('bad request'))
   },
-  addAnswer: (req, res) => {
-    var photos = req.body.photos;
-    delete req.body.photos;
-    var params = [...Object.values(req.body)];
-    QA.questions.addAnswer(params, req.params.question_id, Date.now())
-      .then(response => {
-        res.status(201).json('Update successful');
-      })
-      .catch(err => console.log(err));
-  },
   addQuestion: (req, res) => {
     QA.questions.getQuestionCount()
       .then(response => {
@@ -52,6 +42,37 @@ module.exports = {
             res.status(200).json('Question updated');
           })
           .catch(err => console.log(err));
+      })
+  },
+  addAnswer: (req, res) => {
+    QA.questions.getAnswerCount()
+      .then(response => {
+        var id = Object.values(response.rows[0])[0];
+        var photos = req.body.photos;
+        delete req.body.photos;
+        var params = [...Object.values(req.body), id, req.params.question_id, Date.now()];
+        QA.questions.insertAnswer(params)
+          .then(response => {
+            if (photos.length > 0) {
+              QA.questions.getPhotoCount()
+                .then(({ rows }) => {
+                  var photo_id = parseInt(Object.values(...rows)[0]);
+                  var asyncMap = function (photos) {
+                    photos.forEach(async photo => {
+                      await QA.questions.insertPhoto([photo_id += 1, id, photo])
+                        .then(response => {
+                          res.status(200).json('Data uploaded');
+                        })
+                        .catch(err => res.status(200))
+                    })
+                  }
+                  asyncMap(photos);
+                })
+            } else {
+              res.status(200).json('Data uploaded');
+            }
+          })
+          .catch(err => res.status(404).json(err));
       })
   }
 };
