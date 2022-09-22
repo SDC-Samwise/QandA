@@ -1,4 +1,5 @@
 # Questions and Answers Backend Microservice
+
 Project Atelier is a backend microservice for an E-Commerce product detail page.  Specifically it's a microservice for the Questions and Answers portion of the project. The service was scaled in AWS EC2 to use an Nginx Load Balancing Server, 5 Host servers all communicating with a PostgreSQL database. It currently supports 925 clients per second with response latency of 149 ms (down from 1175 ms).
 
 ## PostgreSQL Details
